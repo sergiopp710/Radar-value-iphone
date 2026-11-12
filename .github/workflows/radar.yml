@@ -1,0 +1,52 @@
+
+name: Radar Value Automatico
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 7 * * *"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar archivos
+        uses: actions/checkout@v4
+
+      - name: Descomprimir Radar Value
+        run: unzip -o radar_value_iphone_v04.zip
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Analizar partidos
+        env:
+          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+          RADAR_LEAGUES: soccer_spain_la_liga,soccer_epl,soccer_italy_serie_a
+        run: python build_static.py
+
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Subir aplicacion
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+  publicar:
+    needs: radar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Publicar Radar Value
+        id: deploy
+        uses: actions/deploy-pages@v4
